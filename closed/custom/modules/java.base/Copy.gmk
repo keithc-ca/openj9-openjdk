@@ -85,6 +85,7 @@ $(call openj9_copy_shlibs, \
 	j9hookable29 \
 	$(if $(filter $(NO_JIT_PLATFORMS),$(TARGET_PLATFORM)),,j9jit29) \
 	j9jnichk29 \
+	j9jvm \
 	j9jvmti29 \
 	j9prt29 \
 	j9thr29 \
@@ -95,7 +96,6 @@ $(call openj9_copy_shlibs, \
 	$(if $(filter static,$(OMR_MIXED_REFERENCES_MODE)),j9vrb_full29) \
 	j9zlib29 \
 	jclse29 \
-	jvm \
 	omrsig \
 	)
 
