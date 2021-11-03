@@ -1,5 +1,5 @@
 # ===========================================================================
-# (c) Copyright IBM Corp. 2020, 2020 All Rights Reserved
+# (c) Copyright IBM Corp. 2020, 2021 All Rights Reserved
 # ===========================================================================
 # This code is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 only, as
@@ -31,6 +31,8 @@ else ifeq (macosx,$(OPENJDK_TARGET_OS))
   DEBUG_SUFFIX_LIST := .dSYM
 else ifeq (windows,$(OPENJDK_TARGET_OS))
   DEBUG_SUFFIX_LIST := .map .pdb
+else ifeq (zos,$(OPENJDK_TARGET_OS))
+  DEBUG_SUFFIX_LIST := .dbg
 else
   DEBUG_SUFFIX_LIST := .debuginfo
 endif
