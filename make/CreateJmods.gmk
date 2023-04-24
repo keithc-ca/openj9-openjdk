@@ -240,6 +240,10 @@ else
   JMOD_FLAGS += --compress $(JMOD_COMPRESS)
 endif
 
+ifeq ($(MODULE), java.base)
+  JMOD_SMALL_FLAGS += $(addprefix -J,$(JMOD_DEBUG_OPTS))
+endif
+
 # Create jmods in the support dir and then move them into place to keep the
 # module path in $(IMAGES_OUTPUTDIR)/jmods valid at all times.
 $(eval $(call SetupExecute, create_$(JMOD_FILE), \

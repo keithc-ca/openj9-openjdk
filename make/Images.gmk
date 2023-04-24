@@ -94,7 +94,9 @@ $(eval $(call SetupExecute, jlink_jdk, \
     OUTPUT_DIR := $(JDK_IMAGE_DIR), \
     SUPPORT_DIR := $(SUPPORT_OUTPUTDIR)/images/jdk, \
     PRE_COMMAND := $(RM) -r $(JDK_IMAGE_DIR), \
-    COMMAND := $(JLINK_TOOL) --add-modules $(JDK_MODULES_LIST) \
+    COMMAND := $(JLINK_TOOL) \
+        $(addprefix -J,$(JLINK_DEBUG_OPTS)) \
+        --add-modules $(JDK_MODULES_LIST) \
         $(JLINK_JDK_EXTRA_OPTS) --output $(JDK_IMAGE_DIR) \
         $(JLINK_DISABLE_WARNINGS), \
 ))
