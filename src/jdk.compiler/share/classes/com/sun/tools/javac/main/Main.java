@@ -60,8 +60,7 @@ import com.sun.tools.javac.util.JCDiagnostic.DiagnosticInfo;
 import com.sun.tools.javac.util.Log.PrefixKind;
 import com.sun.tools.javac.util.Log.WriterKind;
 
-import jdk.internal.opt.CommandLine;
-import jdk.internal.opt.CommandLine.UnmatchedQuote;
+import com.sun.tools.javac.main.CommandLine.UnmatchedQuote;
 
 /** This class provides a command line interface to the javac compiler.
  *
