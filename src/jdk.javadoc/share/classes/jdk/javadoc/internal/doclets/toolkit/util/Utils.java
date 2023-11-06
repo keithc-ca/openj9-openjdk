@@ -2897,6 +2897,11 @@ public class Utils {
         if (e == null) // shouldn't NPE if passed null
             return "null";
         return e + ", " + (e instanceof QualifiedNameable q ? q.getQualifiedName() : e.getSimpleName())
-                + ", " + e.getKind() + ", " + Objects.toIdentityString(e);
+                + ", " + e.getKind() + ", " + toIdentityString(e);
+    }
+
+    private static String toIdentityString(Object o) {
+        // copied from Objects
+        return o.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(o));
     }
 }

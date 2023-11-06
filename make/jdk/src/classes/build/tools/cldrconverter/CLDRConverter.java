@@ -129,8 +129,8 @@ public class CLDRConverter {
     static Map<String, String> dayPeriodRules;
 
     // TZDB Short Names Map
-    private static final Map<String, String> tzdbShortNamesMap = HashMap.newHashMap(512);
-    private static final Map<String, String> tzdbSubstLetters = HashMap.newHashMap(512);
+    private static final Map<String, String> tzdbShortNamesMap = new HashMap<>(512 * 4 / 3);
+    private static final Map<String, String> tzdbSubstLetters = new HashMap<>(512 * 4 / 3);
 
     static enum DraftType {
         UNCONFIRMED,
