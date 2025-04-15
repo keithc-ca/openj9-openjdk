@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -161,16 +162,37 @@ public final class RestrictedSecurity {
         super();
     }
 
-    private static boolean isJarVerifierInStackTrace() {
-        java.util.function.Predicate<Class<?>> isJarVerifier =
-                clazz -> "java.util.jar.JarVerifier".equals(clazz.getName())
-                      && "java.base".equals(clazz.getModule().getName());
+    /*
+     * Track when it is safe to check hashes of profiles.
+     * The low-order bit is set via the call to enableHashChecks() from the
+     * static initializer of Providers. Balanced calls to pauseHashChecks()
+     * and resumeHashChecks() are made from ManifestEntryVerifier. Pausing
+     * adds two to the state, while resume subtracts two. When the state
+     * reaches one it is time to do the hash checking.
+     */
+    private static final AtomicInteger hashCheckState = new AtomicInteger();
 
-        java.util.function.Function<Stream<StackWalker.StackFrame>, Boolean> matcher =
-                stream -> stream.map(StackWalker.StackFrame::getDeclaringClass)
-                                .anyMatch(isJarVerifier);
+    public static void pauseHashChecks() {
+        hashCheckState.addAndGet(2);
+    }
 
-        return StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).walk(matcher);
+    public static void resumeHashChecks() {
+        int state = hashCheckState.addAndGet(-2);
+        if (state == 1) {
+            // a matching number of resumes, and enableHashChecks() has been called
+            checkHashValues();
+        } else if (state < 0) {
+            throw new IllegalStateException(); // too many resume calls
+        }
+    }
+
+    public static void enableHashChecks() {
+        int state = hashCheckState.getAndUpdate(s -> s | 1);
+        if (state == 0) {
+            checkHashValues();
+        } else if ((state & 1) != 0) {
+            throw new IllegalStateException(); // too many enable calls
+        }
     }
 
     /**
@@ -182,7 +204,7 @@ public final class RestrictedSecurity {
      */
     private static void checkHashValues() {
         ProfileParser parser = profileParser;
-        if ((parser != null) && !isJarVerifierInStackTrace()) {
+        if (parser != null) {
             profileParser = null;
             parser.checkHashValues();
         }
@@ -257,7 +279,6 @@ public final class RestrictedSecurity {
      */
     public static boolean isServiceAllowed(Service service) {
         if (securityEnabled) {
-            checkHashValues();
             return restricts.isRestrictedServiceAllowed(service, true);
         }
         return true;
@@ -271,7 +292,6 @@ public final class RestrictedSecurity {
      */
     public static boolean canServiceBeRegistered(Service service) {
         if (securityEnabled) {
-            checkHashValues();
             return restricts.isRestrictedServiceAllowed(service, false);
         }
         return true;
@@ -285,7 +305,6 @@ public final class RestrictedSecurity {
      */
     public static boolean isProviderAllowed(String providerName) {
         if (securityEnabled) {
-            checkHashValues();
             // Remove argument, e.g. -NSS-FIPS, if present.
             int pos = providerName.indexOf('-');
             if (pos >= 0) {
@@ -305,7 +324,6 @@ public final class RestrictedSecurity {
      */
     public static boolean isProviderAllowed(Class<?> providerClazz) {
         if (securityEnabled) {
-            checkHashValues();
             String providerClassName = providerClazz.getName();
 
             // Check if the specified class extends java.security.Provider.

@@ -23,6 +23,12 @@
  * questions.
  */
 
+/*
+ * ===========================================================================
+ * (c) Copyright IBM Corp. 2025, 2025 All Rights Reserved
+ * ===========================================================================
+ */
+
 package sun.security.util;
 
 import java.io.IOException;
@@ -30,6 +36,7 @@ import java.security.*;
 import java.util.*;
 import java.util.jar.*;
 
+import openj9.internal.security.RestrictedSecurity;
 import sun.security.jca.Providers;
 
 /**
@@ -132,6 +139,7 @@ public class ManifestEntryVerifier {
                 MessageDigest digest = createdDigests.get(algorithm);
 
                 if (digest == null) {
+                    RestrictedSecurity.pauseHashChecks();
                     try {
 
                         digest = MessageDigest.getInstance
@@ -139,6 +147,8 @@ public class ManifestEntryVerifier {
                         createdDigests.put(algorithm, digest);
                     } catch (NoSuchAlgorithmException nsae) {
                         // ignore
+                    } finally {
+                        RestrictedSecurity.resumeHashChecks();
                     }
                 }
 
