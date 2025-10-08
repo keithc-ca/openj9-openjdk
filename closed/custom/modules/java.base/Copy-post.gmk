@@ -201,27 +201,21 @@ $(call openj9_copy_files,, \
 endif # OPENJ9_ENABLE_JFR
 
 ##########################################################################################
-# Optionally copy OpenSSL Crypto Library
-# To bundle first search for openssl 1.1.x library, if not found, search for 1.0.x
+# Optionally copy the OpenSSL crypto library.
 ifneq ($(OPENSSL_BUNDLE_LIB_PATH), )
-  ifeq (linux,$(OPENJDK_TARGET_OS))
-    LIBCRYPTO_NAMES := libcrypto.so.3 libcrypto.so.1.1 libcrypto.so.1.0.0
-  else ifeq (macosx,$(OPENJDK_TARGET_OS))
-    LIBCRYPTO_NAMES := libcrypto.3.dylib libcrypto.1.1.dylib libcrypto.1.0.0.dylib
-  else ifeq (windows,$(OPENJDK_TARGET_OS))
-    ifeq ($(OPENJDK_TARGET_CPU_BITS), 64)
-      LIBCRYPTO_NAMES := libcrypto-3-x64.dll libcrypto-1_1-x64.dll
-    else
-      LIBCRYPTO_NAMES := libcrypto-3.dll libcrypto-1_1.dll
-    endif
-    LIBCRYPTO_NAMES += libeay32.dll
-  else ifeq (aix,$(OPENJDK_TARGET_OS))
+  ifeq ($(call isTargetOs, aix), true)
     # OpenSSL 1.1.1 on AIX has switched to use archive library files (natural way)
     # instead of 'libcrypto.so' files.
     # See https://github.com/openssl/openssl/pull/6487.
-    LIBCRYPTO_NAMES := libcrypto64.so.3 libcrypto.so.3 libcrypto.so.1.1 libcrypto.so.1.0.0
+    LIBCRYPTO_NAMES := libcrypto-semeru64.so libcrypto64.so.3 libcrypto.so.3 libcrypto.so.1.1 libcrypto.so.1.0.0
+  else ifeq ($(call isTargetOs, linux), true)
+    LIBCRYPTO_NAMES := libcrypto-semeru.so libcrypto.so.3 libcrypto.so.1.1 libcrypto.so.1.0.0
+  else ifeq ($(call isTargetOs, macosx), true)
+    LIBCRYPTO_NAMES := libcrypto-semeru.dylib libcrypto.3.dylib libcrypto.1.1.dylib libcrypto.1.0.0.dylib
+  else ifeq ($(call isTargetOs, windows), true)
+    LIBCRYPTO_NAMES := libcrypto-semeru-x64.dll libcrypto-3-x64.dll libcrypto-1_1-x64.dll
   else
-    LIBCRYPTO_NAMES := libcrypto.so
+    LIBCRYPTO_NAMES := libcrypto-semeru.so libcrypto.so
   endif
   LIBCRYPTO_PATH := $(firstword $(wildcard $(addprefix $(OPENSSL_BUNDLE_LIB_PATH)/, $(LIBCRYPTO_NAMES))))
   ifeq ($(LIBCRYPTO_PATH), )
@@ -232,29 +226,28 @@ ifneq ($(OPENSSL_BUNDLE_LIB_PATH), )
   TARGETS += $(LIBCRYPTO_TARGET_LIB)
   $(LIBCRYPTO_TARGET_LIB) : $(LIBCRYPTO_PATH)
 	$(call install-file)
-  ifeq (macosx,$(OPENJDK_TARGET_OS))
+  ifeq ($(call isTargetOs, macosx), true)
     # update @rpath of the crypto library as the default is /usr/local/lib/
 	install_name_tool -id "@rpath/$(@F)" $@
-  else ifeq (windows,$(OPENJDK_TARGET_OS))
+  else ifeq ($(call isTargetOs, windows), true)
 	$(CHMOD) a+rx $@
   endif
 	$(call CodesignFile,"$@")
 
-  ifeq (true,$(OPENJ9_ENABLE_JITSERVER))
-    ifeq (linux,$(OPENJDK_TARGET_OS))
-      LIBSSL_NAMES := libssl.so.3 libssl.so.1.1 libssl.so.1.0.0
-      LIBSSL_PATH := $(firstword $(wildcard $(addprefix $(OPENSSL_BUNDLE_LIB_PATH)/, $(LIBSSL_NAMES))))
+  ifeq ($(OPENJ9_ENABLE_JITSERVER)+$(call isTargetOs, linux), true+true)
+    LIBSSL_NAMES := libssl-semeru.so libssl.so.3 libssl.so.1.1 libssl.so.1.0.0
+    LIBSSL_PATH := $(firstword $(wildcard $(addprefix $(OPENSSL_BUNDLE_LIB_PATH)/, $(LIBSSL_NAMES))))
 
-      ifneq ($(LIBSSL_PATH), )
-        LIBSSL_TARGET_LIB = $(LIB_DST_DIR)/$(LIBRARY_PREFIX)ssl-semeru$(SHARED_LIBRARY_SUFFIX)
-        TARGETS += $(LIBSSL_TARGET_LIB)
-        $(LIBSSL_TARGET_LIB) : $(LIBSSL_PATH)
-			$(call install-file)
-			$(call CodesignFile,"$@")
-      endif # LIBSSL_PATH
-    endif # OPENJDK_TARGET_OS
-  endif # OPENJ9_ENABLE_JITSERVER
+    ifneq ($(LIBSSL_PATH), )
+      LIBSSL_TARGET_LIB = $(LIB_DST_DIR)/$(LIBRARY_PREFIX)ssl-semeru$(SHARED_LIBRARY_SUFFIX)
+      TARGETS += $(LIBSSL_TARGET_LIB)
+      $(LIBSSL_TARGET_LIB) : $(LIBSSL_PATH)
+		$(call install-file)
+		$(call CodesignFile,"$@")
+    endif # LIBSSL_PATH
+  endif # jitserver on linux
 endif # OPENSSL_BUNDLE_LIB_PATH
+
 ################################################################################
 # Copy the nss.fips.cfg only on x86/p/z linux
 
